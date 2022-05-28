@@ -1,5 +1,5 @@
 import { computeGlobalAlignment, computeLocalAlignment, epitopeMap } from "@vsdbmv2/mapping-library";
-import { IWork } from "../../@types/Work";
+import { IWork } from "@vsdbmv2/mapping-library/types/@types";
 import { promisify } from "util";
 
 const asyncComputeGlobalAlignment = promisify(computeGlobalAlignment);
