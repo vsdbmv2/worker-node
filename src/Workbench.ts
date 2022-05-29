@@ -9,24 +9,27 @@ class Workbench {
 		this.__works = _works ?? ([] as IWork[]);
 	}
 
-	addWork(works: IWork[], notify: (finishedWorks: IWork[]) => void) {
-		this.__works.concat([...works]);
+	addWorks(works: IWork[], notify: (finishedWorks: IWork[]) => void) {
+		this.__works = this.__works.concat(works);
 		this.run(notify);
 	}
 
-	get hasFinishedWorks(): boolean {
+	async addWorksAsync(works: IWork[]): Promise<IWork[]> {
+		this.__works = this.__works.concat(works);
+		// return new Promise((resolve) => this.run(resolve));
+		return this.runAsync();
+	}
+
+	get finishedWorks(): boolean {
 		return this.__works.length === 0;
 	}
 
 	clearFinishedWorks() {
-		while (this.__finishedWorks.length > 0) {
-			this.__finishedWorks.pop();
-		}
+		while (this.__finishedWorks.length) this.__finishedWorks.pop();
 	}
 
-	private async run(notify: (finishedWorks: IWork[]) => void) {
-		// const newJobs = await Promise.all(this._works.map(async work => handleWorkAsync(work)));
-		while (!this.hasFinishedWorks) {
+	private run(notify?: (finishedWorks: IWork[]) => void) {
+		while (!this.finishedWorks) {
 			const work = this.__works.pop() as IWork;
 			const payload = handleWork(work);
 			work.payload = payload;
@@ -34,6 +37,16 @@ class Workbench {
 			this.__finishedWorks.push(work);
 		}
 		notify?.(this.__finishedWorks);
+	}
+	private async runAsync(): Promise<IWork[]> {
+		const works = await Promise.all(this.__works.map(async (work: IWork) => ({
+			...work,
+			payload : handleWork(work),
+			status: "DONE"
+		}) as IWork));
+		this.__finishedWorks = works;
+		while(!this.finishedWorks) this.__works.pop();
+		return this.__finishedWorks;
 	}
 }
 
