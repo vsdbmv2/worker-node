@@ -19,24 +19,31 @@ console.log(`Starting worker, ${worksAmount} works per time`);
 const socket = io(process.env.ORCHESTRATOR_ADDRESS as string);
 
 socket.on("pong", () => {
-	if (workBench.hasFinishedWorks) {
-		socket.emit("get-work", { worksAmount });
-	}
+	if (!workBench.finishedWorks) return;
+	socket.emit("get-work", { worksAmount });
 });
 
-socket.on("work", (work?: IWork[]) => {
-	if (work) {
-		console.log(`getting ${work.length} works`);
-		workBench.addWork(work, (finishedWorks: IWork[]) => {
-			console.log(`finishing ${finishedWorks.length} works`);
-			socket.emit("work-complete", finishedWorks);
-			workBench.clearFinishedWorks();
-		});
-	}
+socket.on("work", (works: IWork[]) => {
+	if (!works) return;
+	console.log(`getting ${works.length} works: (${works.map(({type}) => type).join(", ")})`);
+	workBench.addWorks(works, (finishedWorks: IWork[]) => {
+		console.log(`finishing ${finishedWorks.length} works`);
+		socket.emit("work-complete", finishedWorks);
+		console.log(`cleaning workbench`);
+		workBench.clearFinishedWorks();
+	});
 });
 
-socket.on("disconnect", () => {
-	console.log("Disconected...", socket.id);
-});
+// socket.on("work", async (works: IWork[]) => {
+// 	if (!works) return;
+// 	console.log(`getting ${works.length} works: (${works.map(({type}) => type).join(", ")})`);
+// 	const finishedWorks = await workBench.addWorksAsync(works);
+// 	console.log(`finishing ${finishedWorks.length} works`);
+// 	socket.emit("work-complete", finishedWorks);
+// 	console.log(`cleaning workbench`);
+// 	workBench.clearFinishedWorks();
+// });
 
-socket.on("bem-vindo", (data: any) => console.table({ data, id: socket.id }));
+socket.on("disconnect", () => console.log("Disconnected...", socket.id));
+
+socket.on("connection", (data: any) => console.table({ data, id: socket.id }));
