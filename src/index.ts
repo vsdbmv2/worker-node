@@ -1,49 +1,52 @@
 import { getArgParams } from "./functions/helpers";
 import dotenv from "dotenv";
-import os from "os";
 dotenv.config();
 
 import { io } from "socket.io-client";
-import { WorkbenchSingleton } from "./Workbench";
 import { IWork } from "@vsdbmv2/mapping-library/types/@types";
+import { handleWorks } from "./functions/handleWorks";
+import { availableParallelism } from "node:os";
+const numCPUs = availableParallelism();
 
-const workBench = WorkbenchSingleton.getInstance();
-
-const totalMemory = Math.ceil(os.totalmem() / (1024 * 1024 * 1024));
 const params = getArgParams();
 
-let worksAmount = params.worksAmount ?? (Number(process.env.CONCURRENT_PROCESS) || totalMemory);
+let worksAmount = params.worksAmount ?? (Number(process.env.CONCURRENT_PROCESS) || numCPUs);
 
 console.log(`Starting worker, ${worksAmount} works per time`);
 
 const socket = io(process.env.ORCHESTRATOR_ADDRESS as string);
+let busy = false;
 
-socket.on("pong", () => {
-	if (!workBench.finishedWorks) return;
+socket.on("ping", (data) => {
+	socket.emit("pong", {
+		// startTime: data.startTime,
+		...(data.server_ts ? { server_ts: data.server_ts } : {}),
+		...(data.server_ack_ts ? { server_ack_ts: data.server_ack_ts } : {}),
+		client_ts: performance.now(),
+	});
+	if (busy) return;
+	console.log("emitting get work");
+	socket.emit("get-work", { worksAmount });
+	console.log("requested work");
+});
+
+socket.on("work", async (works: IWork[]) => {
+	if (!works) return;
+	busy = true;
+	console.log(`getting ${works.length} works: (${works.map(({ type }) => type).join(", ")})`);
+	const results = await handleWorks(works);
+	console.log("emitting results event");
+	await socket.emit("work-complete", results);
+	busy = false;
+});
+
+socket.on("disconnect", () => {
+	console.log("Disconnected...", socket.id);
+	busy = false;
+});
+socket.on("connect", () => {
 	socket.emit("get-work", { worksAmount });
 });
-
-socket.on("work", (works: IWork[]) => {
-	if (!works) return;
-	console.log(`getting ${works.length} works: (${works.map(({type}) => type).join(", ")})`);
-	workBench.addWorks(works, (finishedWorks: IWork[]) => {
-		console.log(`finishing ${finishedWorks.length} works`);
-		socket.emit("work-complete", finishedWorks);
-		console.log(`cleaning workbench`);
-		workBench.clearFinishedWorks();
-	});
+socket.on("reconnect", () => {
+	socket.emit("get-work", { worksAmount });
 });
-
-// socket.on("work", async (works: IWork[]) => {
-// 	if (!works) return;
-// 	console.log(`getting ${works.length} works: (${works.map(({type}) => type).join(", ")})`);
-// 	const finishedWorks = await workBench.addWorksAsync(works);
-// 	console.log(`finishing ${finishedWorks.length} works`);
-// 	socket.emit("work-complete", finishedWorks);
-// 	console.log(`cleaning workbench`);
-// 	workBench.clearFinishedWorks();
-// });
-
-socket.on("disconnect", () => console.log("Disconnected...", socket.id));
-
-socket.on("connection", (data: any) => console.table({ data, id: socket.id }));

@@ -2,7 +2,7 @@
   "ts-node": {
     "transpileOnly": true,
     "compilerOptions": {
-      "module": "commonjs",
+      "module": "NodeNext",
       "sourceMap": true,
     },
     "include": [
@@ -11,8 +11,8 @@
   },
   "compilerOptions": {
     "target": "es2020",                                     
-
-    "module": "commonjs",                                
+    "moduleResolution": "nodenext",
+    "module": "NodeNext",                                
     "outDir": "./dist/",                                   
     "removeComments": true,    
     "declaration": true,                      
