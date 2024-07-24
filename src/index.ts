@@ -1,10 +1,10 @@
-import { getArgParams } from "./functions/helpers";
+import { getArgParams } from "./functions/helpers.js";
 import dotenv from "dotenv";
 dotenv.config();
 
 import { io } from "socket.io-client";
-import { IWork } from "@vsdbmv2/mapping-library/types/@types";
-import { handleWorks } from "./functions/handleWorks";
+import { IWork } from "@vsdbmv2/mapping-library";
+import { handleWorks } from "./functions/handleWorks.js";
 import { availableParallelism } from "node:os";
 const numCPUs = availableParallelism();
 

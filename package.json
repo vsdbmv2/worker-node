@@ -25,7 +25,7 @@
   },
   "keywords": [],
   "dependencies": {
-    "@vsdbmv2/mapping-library": "0.0.72",
+    "@vsdbmv2/mapping-library": "^0.0.76",
     "socket.io-client": "^4.2.0"
   },
   "license": "ISC",
