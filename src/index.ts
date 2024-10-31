@@ -16,7 +16,7 @@ console.log(`Starting worker, ${worksAmount} works per time`);
 
 const socket = io(process.env.ORCHESTRATOR_ADDRESS as string);
 let busy = false;
-
+let retries = 0;
 socket.on("ping", (data) => {
 	socket.emit("pong", {
 		// startTime: data.startTime,
@@ -25,17 +25,15 @@ socket.on("ping", (data) => {
 		client_ts: performance.now(),
 	});
 	if (busy) return;
-	console.log("emitting get work");
 	socket.emit("get-work", { worksAmount });
-	console.log("requested work");
+	retries++;
 });
 
 socket.on("work", async (works: IWork[]) => {
 	if (!works) return;
 	busy = true;
-	console.log(`getting ${works.length} works: (${works.map(({ type }) => type).join(", ")})`);
+	retries = 0;
 	const results = await handleWorks(works);
-	console.log("emitting results event");
 	await socket.emit("work-complete", results);
 	busy = false;
 });

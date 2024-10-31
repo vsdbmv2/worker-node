@@ -13,11 +13,13 @@
     "url": "https://vsdbm.bahia.fiocruz.br"
   },
   "scripts": {
-    "dev": "node --import tsx src/index.ts",
+    "start": "pm2 start src/index.ts -i 4",
+    "run": "node --max-old-space-size=32768 --import tsx src/index.ts",
+    "dev": "node --max-old-space-size=16384 --import tsx src/index.ts",
     "dev:old2": "ts-node-dev src/index.ts",
     "dev:old": "nodemon --watch 'src/' --exec 'ts-node src/index.ts' -e ts",
     "types": "tsc --noEmit",
-    "build": "rm -rf dist 2> /dev/null && babel --extensions '.ts' src --out-dir dist && echo 'Build worker successfully'",
+    "build": "rm -rf dist 2> /dev/null && npx tsc && cp ./src/functions/process.js ./dist/functions/ && echo 'Build worker successfully'",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint .",
@@ -25,7 +27,7 @@
   },
   "keywords": [],
   "dependencies": {
-    "@vsdbmv2/mapping-library": "^0.0.76",
+    "@vsdbmv2/mapping-library": "0.0.77",
     "socket.io-client": "^4.2.0"
   },
   "license": "ISC",
@@ -40,6 +42,7 @@
     "babel-preset-minify": "^0.5.1",
     "dotenv": "^16.4.5",
     "nodemon": "^2.0.12",
+    "pm2": "^5.4.2",
     "ts-node": "^10.2.1",
     "ts-node-dev": "^1.1.8",
     "tsx": "^4.16.2",
